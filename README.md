@@ -2,6 +2,11 @@
 
 Catálogo responsivo de eventos locais em Campina Grande, com pesquisa, filtros, detalhes e fluxo de reserva ou lista de interesse.
 
+## Links
+
+- **Aplicação publicada:** https://vivacg-eventos-locais.vercel.app/
+- **Código-fonte:** https://github.com/JoalissonAraujo/vivacg-eventos-locais
+
 ## Problema e proposta
 
 Eventos locais costumam ficar dispersos em diferentes redes sociais. O VivaCG reúne informações essenciais em uma jornada curta: descobrir um evento, consultar os detalhes e reservar uma vaga.
@@ -37,6 +42,7 @@ O projeto foi pensado como MVP para o desafio de estágio da InovatechIA. Priori
 - Lucide React;
 - CSS responsivo próprio;
 - Vitest;
+- Vercel para publicação contínua;
 - PostgreSQL/Supabase planejado em `supabase/schema.sql`.
 
 ## Executar no VS Code (PowerShell)
@@ -58,6 +64,8 @@ npm run lint
 npm run build
 ```
 
+A versão atual possui 13 testes automatizados para validação, reservas, favoritos, códigos individuais, migração de dados e cancelamentos.
+
 ## Iniciar o versionamento Git
 
 ```powershell
@@ -78,9 +86,15 @@ git push -u origin main
 
 Os eventos estão isolados em `src/data/events.ts` e a persistência em `src/services/reservationsService.ts`. Essa separação permite trocar os dados locais pelo Supabase sem reescrever os componentes visuais.
 
-Para que o MVP funcione sem credenciais externas, as reservas são armazenadas no `localStorage` do navegador. Isso é adequado apenas para demonstração. O esquema SQL incluído mostra a evolução prevista para um backend real.
+Para que o MVP funcione sem credenciais externas, favoritos, reservas e ingressos são armazenados no `localStorage`. A escolha permite executar e demonstrar toda a jornada sem configurar servidor, banco ou segredos. Os dados persistem após recarregar a página, mas pertencem somente ao navegador em que foram criados.
 
-O banco não permite preço negativo, evento com término anterior ao início, quantidade fora do intervalo de 1 a 4 ou duas reservas do mesmo e-mail no mesmo evento. As tabelas usam Row Level Security. Não foi criada uma política pública para ler reservas, protegendo os dados de participantes.
+A disponibilidade é recalculada localmente após criação, ampliação ou cancelamento de reservas. Reservas confirmadas consomem vagas; lista de interesse e ingressos cancelados não consomem. O limite de quatro ingressos é verificado na interface e no serviço.
+
+Cada reserva recebe um código de grupo e cada ingresso recebe um código próprio, gerados com `crypto.randomUUID()`. E-mails são normalizados, registros cancelados permanecem no histórico e dados de versões anteriores são migrados automaticamente.
+
+Para uma versão multiusuário, eventos e reservas seriam persistidos no Supabase por uma Edge Function. A função validaria capacidade de maneira transacional, impediria concorrência sobre a última vaga e manteria credenciais privilegiadas fora do navegador. Favoritos poderiam continuar locais.
+
+O modelo PostgreSQL não permite preço negativo, evento com término anterior ao início, mais de quatro ingressos ou duas reservas do mesmo e-mail no mesmo evento. Códigos são únicos, existe apenas um ingresso principal por reserva e as tabelas usam Row Level Security. Não há política pública para leitura de reservas ou ingressos.
 
 ## Uso de inteligência artificial
 
@@ -96,18 +110,23 @@ Prompts relevantes devem ser registrados durante o desenvolvimento real. Exemplo
 ## Limitações
 
 - dados de eventos são fictícios e locais;
-- a reserva fica apenas no navegador atual;
+- favoritos, reservas e ingressos ficam somente no navegador atual;
+- dados não são compartilhados entre dispositivos ou navegadores;
+- limpar os dados do site remove o histórico local;
+- a quantidade de vagas não é sincronizada entre visitantes diferentes;
 - não há autenticação, envio real de e-mail ou painel administrativo;
+- códigos de ingresso são demonstrativos e não possuem validação presencial;
 - imagens demonstrativas dependem de conexão com a internet;
-- a disponibilidade exibida ainda não é recalculada após a reserva local.
+- `localStorage` não deve armazenar dados sensíveis em uma versão comercial.
 
 ## Próximos passos
 
 1. Integrar leitura de eventos ao Supabase.
-2. Criar Edge Function para reservas e controle transacional de vagas.
-3. Implementar autenticação e painel para organizadores.
-4. Adicionar cancelamento, favoritos e notificações.
-5. Realizar testes de acessibilidade e de componentes mais amplos.
+2. Criar Edge Function para reservas, tokens de gerenciamento e controle transacional de vagas.
+3. Adicionar recuperação segura da reserva por e-mail.
+4. Implementar autenticação e painel para organizadores.
+5. Adicionar validação de ingresso por QR Code.
+6. Ampliar testes de componentes e acessibilidade.
 
 ## Estrutura principal
 
