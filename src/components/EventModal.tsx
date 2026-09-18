@@ -80,7 +80,7 @@ export function EventModal({ event, onClose, onReserved }: EventModalProps) {
 
   const copyReceipt = async () => {
     if (!reservation) return
-    const receipt = `${event.title}\n${formatDate(event.startsAt)}\n${reservation.quantity} vaga(s)\nCódigo: ${reservation.id.slice(0, 8).toUpperCase()}`
+    const receipt = `${event.title}\n${formatDate(event.startsAt)}\n${reservation.quantity} ingresso(s)\nReserva: ${reservation.code}`
     await navigator.clipboard.writeText(receipt)
     setCopied(true)
   }
@@ -114,7 +114,7 @@ export function EventModal({ event, onClose, onReserved }: EventModalProps) {
                 <h3>{soldOut ? 'Interesse registrado' : 'Reserva confirmada'}</h3>
                 <p>Enviamos os detalhes para <strong>{reservation.email}</strong>.</p>
                 <div className="receipt-summary"><span>{formatDate(event.startsAt)}</span><span>{reservation.quantity} {reservation.quantity === 1 ? 'vaga' : 'vagas'}</span></div>
-                <span className="reservation-code">Código {reservation.id.slice(0, 8).toUpperCase()}</span>
+                <span className="reservation-code">Reserva {reservation.code}</span>
                 <button className="copy-button" type="button" onClick={copyReceipt}>{copied ? <Check size={17} /> : <Copy size={17} />} {copied ? 'Copiado' : 'Copiar comprovante'}</button>
                 <button className="primary-button" type="button" onClick={onClose}>Voltar aos eventos</button>
               </div>

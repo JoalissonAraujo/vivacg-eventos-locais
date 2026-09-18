@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addSpotToReservation, cancelReservation, createReservation, getReservations, getReservedSpots, removeSpotFromReservation } from './reservationsService'
+import { addSpotToReservation, cancelReservation, cancelTicket, createReservation, getActiveTickets, getReservations, getReservedSpots } from './reservationsService'
 
 class MemoryStorage {
   private values = new Map<string, string>()
@@ -10,8 +10,9 @@ class MemoryStorage {
 
 describe('reservationsService', () => {
   beforeEach(() => {
+    let sequence = 0
     vi.stubGlobal('localStorage', new MemoryStorage())
-    vi.stubGlobal('crypto', { randomUUID: () => '12345678-1234-1234-1234-123456789abc' })
+    vi.stubGlobal('crypto', { randomUUID: () => `${String(sequence++).padStart(8, '0')}-1234-1234-1234-123456789abc` })
   })
 
   it('salva a reserva e contabiliza as vagas confirmadas', async () => {
@@ -35,15 +36,17 @@ describe('reservationsService', () => {
     await expect(createReservation(input)).rejects.toThrow('Já existe uma reserva')
   })
 
-  it('adiciona e remove uma vaga mantendo uma única reserva', async () => {
+  it('adiciona e cancela um ingresso mantendo uma única reserva', async () => {
     const reservation = await createReservation({ eventId: 'evento-4', name: 'Lia da Silva', email: 'lia@example.com', quantity: 1 })
     const expanded = await addSpotToReservation(reservation.id, 3, 'Convidado')
     expect(expanded.quantity).toBe(2)
-    expect(expanded.guests[0].name).toBe('Convidado')
+    const guestTicket = expanded.tickets.find((ticket) => !ticket.isPrimary && ticket.status === 'active')!
+    expect(guestTicket.holderName).toBe('Convidado')
+    expect(guestTicket.code).toMatch(/^VCG-I-/)
 
-    const reduced = removeSpotFromReservation(reservation.id, expanded.guests[0].id)
+    const reduced = cancelTicket(reservation.id, guestTicket.id)
     expect(reduced.quantity).toBe(1)
-    expect(reduced.guests).toHaveLength(0)
+    expect(reduced.tickets.find((ticket) => ticket.id === guestTicket.id)?.status).toBe('cancelled')
   })
 
   it('cancela sem apagar o histórico e devolve as vagas', async () => {
@@ -66,7 +69,7 @@ describe('reservationsService', () => {
     expect(getReservations()).toHaveLength(1)
   })
 
-  it('migra reservas antigas e persiste os identificadores dos convidados', () => {
+  it('migra reservas antigas e persiste códigos individuais', () => {
     localStorage.setItem('vivacg:reservations', JSON.stringify([{
       id: 'antiga', eventId: 'evento-7', name: 'Sol da Silva', email: 'SOL@example.com', quantity: 2,
       status: 'confirmed', createdAt: '2026-09-18T10:00:00.000Z',
@@ -75,7 +78,21 @@ describe('reservationsService', () => {
     const firstRead = getReservations()[0]
     const secondRead = getReservations()[0]
     expect(firstRead.email).toBe('sol@example.com')
-    expect(firstRead.guests).toHaveLength(1)
-    expect(secondRead.guests[0].id).toBe(firstRead.guests[0].id)
+    expect(firstRead.code).toMatch(/^VCG-R-/)
+    expect(firstRead.tickets).toHaveLength(2)
+    expect(getActiveTickets(firstRead)).toHaveLength(2)
+    expect(secondRead.tickets[0].code).toBe(firstRead.tickets[0].code)
+  })
+
+  it('não permite cancelar individualmente o ingresso principal', async () => {
+    const reservation = await createReservation({ eventId: 'evento-8', name: 'Ivo da Silva', email: 'ivo@example.com', quantity: 1 })
+    const primary = reservation.tickets.find((ticket) => ticket.isPrimary)!
+    expect(() => cancelTicket(reservation.id, primary.id)).toThrow('ingresso principal')
+  })
+
+  it('gera códigos diferentes para a reserva e cada ingresso', async () => {
+    const reservation = await createReservation({ eventId: 'evento-9', name: 'Nina da Silva', email: 'nina@example.com', quantity: 3 })
+    const codes = [reservation.code, ...reservation.tickets.map((ticket) => ticket.code)]
+    expect(new Set(codes).size).toBe(4)
   })
 })

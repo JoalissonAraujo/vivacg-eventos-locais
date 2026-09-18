@@ -161,6 +161,28 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .reservation-item h3 { margin: 12px 0 8px; font: 750 1.05rem 'Manrope', sans-serif; }
 .reservation-item p { display: flex; align-items: center; gap: 6px; margin: 5px 0; color: var(--muted); font-size: .84rem; }
 .reservation-item small { display: block; margin-top: 10px; color: #48534c; }
+.details-button { width: 100%; min-height: 39px; margin-top: 13px; border: 1px solid #aec0b4; border-radius: 9px; color: var(--green-800); background: white; cursor: pointer; font-weight: 700; }
+.reservation-details > h2 { margin: 5px 45px 12px 0; font: 800 1.55rem 'Manrope', sans-serif; }
+.back-button { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 18px; padding: 5px 0; border: 0; color: var(--green-650); background: transparent; cursor: pointer; font-weight: 700; }
+.detail-line { display: flex; align-items: center; gap: 7px; margin: 5px 0; color: var(--muted); font-size: .87rem; }
+.group-code { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 14px; margin: 18px 0; border: 1px solid var(--line); border-radius: 12px; background: #f5f7f4; }
+.group-code span { grid-column: 1 / -1; color: var(--muted); font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+.group-code strong { font-family: monospace; letter-spacing: .05em; }
+.group-code button, .ticket-item > button:not(.danger-link) { display: inline-flex; align-items: center; gap: 5px; border: 0; color: var(--green-650); background: transparent; cursor: pointer; font-size: .78rem; font-weight: 700; }
+.tickets-heading { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 10px; }
+.tickets-heading h3 { margin: 0; font: 750 1.1rem 'Manrope', sans-serif; }
+.tickets-heading span { color: var(--muted); font-size: .8rem; }
+.ticket-list { display: grid; gap: 9px; }
+.ticket-item { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 13px; border: 1px solid var(--line); border-radius: 11px; }
+.ticket-item > div { display: grid; gap: 2px; }
+.ticket-item > div span { color: var(--muted); font-size: .72rem; }
+.ticket-item > div strong { font-size: .9rem; }
+.ticket-item code { align-self: center; color: #4b5850; font-size: .76rem; }
+.ticket-item.cancelled { opacity: .62; background: #f7f3f3; }
+.ticket-cancelled { justify-self: end; color: #8c4444; font-size: .75rem; font-weight: 800; }
+.ticket-item .danger-link { grid-column: 1 / -1; justify-self: start; margin: 0; }
+.cancel-reservation { margin: 20px 0 0; }
+.waitlist-note { padding: 13px; color: #735817; background: #fff7d9; border-radius: 10px; font-size: .85rem; line-height: 1.5; }
 .participants { display: grid; gap: 5px; padding: 10px; margin-top: 10px; background: #f6f8f5; border-radius: 9px; }
 .participants > div { display: flex; align-items: center; gap: 7px; color: #536059; font-size: .79rem; }
 .participants > div span { flex: 1; }

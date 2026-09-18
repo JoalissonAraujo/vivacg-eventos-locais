@@ -38,10 +38,11 @@ create table public.events (
 
 create table public.reservations (
   id uuid primary key default gen_random_uuid(),
+  code varchar(32) not null unique,
   event_id uuid not null references public.events(id) on delete restrict,
   attendee_name varchar(80) not null check (char_length(trim(attendee_name)) >= 3),
   attendee_email varchar(120) not null,
-  quantity smallint not null default 1 check (quantity between 1 and 4),
+  quantity smallint not null default 1 check (quantity between 0 and 4),
   status varchar(20) not null default 'confirmed' check (status in ('confirmed', 'waitlist', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -49,24 +50,29 @@ create table public.reservations (
   constraint one_reservation_per_email unique (event_id, attendee_email)
 );
 
-create table public.reservation_guests (
+create table public.reservation_tickets (
   id uuid primary key default gen_random_uuid(),
   reservation_id uuid not null references public.reservations(id) on delete cascade,
-  guest_name varchar(80),
+  code varchar(32) not null unique,
+  holder_name varchar(80),
+  is_primary boolean not null default false,
+  status varchar(20) not null default 'active' check (status in ('active', 'cancelled')),
   created_at timestamptz not null default now(),
-  constraint valid_optional_guest_name check (guest_name is null or char_length(trim(guest_name)) between 1 and 80)
+  cancelled_at timestamptz,
+  constraint valid_optional_holder_name check (holder_name is null or char_length(trim(holder_name)) between 1 and 80)
 );
 
 create index events_starts_at_idx on public.events (starts_at);
 create index events_category_id_idx on public.events (category_id);
 create index reservations_event_id_idx on public.reservations (event_id);
-create index reservation_guests_reservation_id_idx on public.reservation_guests (reservation_id);
+create index reservation_tickets_reservation_id_idx on public.reservation_tickets (reservation_id);
+create unique index one_primary_ticket_per_reservation_idx on public.reservation_tickets (reservation_id) where is_primary = true;
 
 alter table public.categories enable row level security;
 alter table public.venues enable row level security;
 alter table public.events enable row level security;
 alter table public.reservations enable row level security;
-alter table public.reservation_guests enable row level security;
+alter table public.reservation_tickets enable row level security;
 
 create policy "Public can read categories"
   on public.categories for select to anon using (true);

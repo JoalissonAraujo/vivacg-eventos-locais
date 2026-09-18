@@ -23,6 +23,8 @@ O projeto foi pensado como MVP para o desafio de estágio da InovatechIA. Priori
 - favoritos locais e filtro para exibir somente eventos salvos;
 - ampliação segura de uma reserva existente, com convidado opcional;
 - remoção de vaga adicional e cancelamento sem apagar o histórico;
+- detalhes da reserva com código do grupo e código exclusivo para cada ingresso;
+- cancelamento individual de ingresso adicional, mantendo seu histórico;
 - estados vazio, carregando, erro e sucesso;
 - layout adaptado para celular e desktop;
 - modelo PostgreSQL/Supabase com integridade, índices e RLS.
