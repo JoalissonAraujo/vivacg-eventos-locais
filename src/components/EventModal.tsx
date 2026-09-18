@@ -1,21 +1,28 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Calendar, CheckCircle2, LoaderCircle, MapPin, Ticket, Users, X } from 'lucide-react'
+import { Calendar, Check, CheckCircle2, Copy, LoaderCircle, MapPin, Ticket, Users, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { formatDate, formatPrice } from '../lib/formatters'
 import { reservationSchema, type ReservationFormData } from '../schemas/reservationSchema'
-import { createReservation } from '../services/reservationsService'
+import { addSpotToReservation, createReservation, ExistingReservationError } from '../services/reservationsService'
 import type { LocalEvent, Reservation } from '../types/event'
 
 interface EventModalProps {
   event: LocalEvent
   onClose: () => void
+  onReserved: () => void
 }
 
-export function EventModal({ event, onClose }: EventModalProps) {
+export function EventModal({ event, onClose, onReserved }: EventModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const [reservation, setReservation] = useState<Reservation | null>(null)
   const [serverError, setServerError] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [existingReservation, setExistingReservation] = useState<Reservation | null>(null)
+  const [spotFor, setSpotFor] = useState<'self' | 'guest'>('self')
+  const [guestName, setGuestName] = useState('')
+  const [isAddingSpot, setIsAddingSpot] = useState(false)
+  const addingSpotLock = useRef(false)
   const soldOut = event.availableSpots === 0
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
@@ -37,11 +44,45 @@ export function EventModal({ event, onClose }: EventModalProps) {
   const onSubmit = async (data: ReservationFormData) => {
     setServerError('')
     try {
-      const result = await createReservation({ ...data, eventId: event.id })
+      if (!soldOut && data.quantity > event.availableSpots) {
+        setServerError(`Restam apenas ${event.availableSpots} vagas para este evento.`)
+        return
+      }
+      const result = await createReservation({ ...data, eventId: event.id }, soldOut)
       setReservation(result)
+      onReserved()
     } catch (error) {
+      if (error instanceof ExistingReservationError) {
+        setExistingReservation(error.reservation)
+        return
+      }
       setServerError(error instanceof Error ? error.message : 'Não foi possível concluir. Tente novamente.')
     }
+  }
+
+  const confirmAdditionalSpot = async () => {
+    if (!existingReservation || addingSpotLock.current) return
+    addingSpotLock.current = true
+    setServerError('')
+    setIsAddingSpot(true)
+    try {
+      const updated = await addSpotToReservation(existingReservation.id, event.availableSpots, spotFor === 'guest' ? guestName : undefined)
+      setReservation(updated)
+      setExistingReservation(null)
+      onReserved()
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : 'Não foi possível adicionar a vaga.')
+    } finally {
+      addingSpotLock.current = false
+      setIsAddingSpot(false)
+    }
+  }
+
+  const copyReceipt = async () => {
+    if (!reservation) return
+    const receipt = `${event.title}\n${formatDate(event.startsAt)}\n${reservation.quantity} vaga(s)\nCódigo: ${reservation.id.slice(0, 8).toUpperCase()}`
+    await navigator.clipboard.writeText(receipt)
+    setCopied(true)
   }
 
   return (
@@ -72,8 +113,46 @@ export function EventModal({ event, onClose }: EventModalProps) {
                 <p className="eyebrow">Tudo certo!</p>
                 <h3>{soldOut ? 'Interesse registrado' : 'Reserva confirmada'}</h3>
                 <p>Enviamos os detalhes para <strong>{reservation.email}</strong>.</p>
+                <div className="receipt-summary"><span>{formatDate(event.startsAt)}</span><span>{reservation.quantity} {reservation.quantity === 1 ? 'vaga' : 'vagas'}</span></div>
                 <span className="reservation-code">Código {reservation.id.slice(0, 8).toUpperCase()}</span>
+                <button className="copy-button" type="button" onClick={copyReceipt}>{copied ? <Check size={17} /> : <Copy size={17} />} {copied ? 'Copiado' : 'Copiar comprovante'}</button>
                 <button className="primary-button" type="button" onClick={onClose}>Voltar aos eventos</button>
+              </div>
+            ) : existingReservation ? (
+              <div className="existing-reservation" role="status">
+                <p className="eyebrow">Reserva encontrada</p>
+                <h3>Você já participa deste evento</h3>
+                {existingReservation.status === 'waitlist' ? (
+                  <>
+                    <p>Este e-mail já está na lista de interesse. Não é necessário registrar novamente.</p>
+                    <button className="primary-button" type="button" onClick={onClose}>Entendi</button>
+                  </>
+                ) : existingReservation.quantity >= 4 ? (
+                  <>
+                    <p>Sua reserva já atingiu o limite de quatro vagas para este evento.</p>
+                    <button className="primary-button" type="button" onClick={onClose}>Ver outros eventos</button>
+                  </>
+                ) : event.availableSpots < 1 ? (
+                  <>
+                    <p>Sua reserva continua confirmada, mas não existem novas vagas disponíveis.</p>
+                    <button className="primary-button" type="button" onClick={onClose}>Entendi</button>
+                  </>
+                ) : (
+                  <>
+                    <p>Já existem <strong>{existingReservation.quantity} {existingReservation.quantity === 1 ? 'vaga' : 'vagas'}</strong> neste e-mail. Deseja adicionar mais uma?</p>
+                    <div className="radio-group" aria-label="Para quem é a nova vaga?">
+                      <label><input type="radio" name="spotFor" checked={spotFor === 'self'} onChange={() => setSpotFor('self')} /> Para mim</label>
+                      <label><input type="radio" name="spotFor" checked={spotFor === 'guest'} onChange={() => setSpotFor('guest')} /> Para outra pessoa</label>
+                    </div>
+                    {spotFor === 'guest' && <label>Nome da pessoa <span>(opcional)</span><input value={guestName} maxLength={80} onChange={(event) => setGuestName(event.target.value)} autoComplete="off" /></label>}
+                    <small>A reserva não é nominal. O nome serve somente para sua organização e a vaga pode ser compartilhada.</small>
+                    {serverError && <div className="form-error" role="alert">{serverError}</div>}
+                    <div className="form-actions">
+                      <button className="secondary-button" type="button" onClick={() => setExistingReservation(null)}>Voltar</button>
+                      <button className="primary-button" type="button" onClick={confirmAdditionalSpot} disabled={isAddingSpot}>{isAddingSpot ? 'Adicionando...' : 'Adicionar uma vaga'}</button>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit(onSubmit)} noValidate>

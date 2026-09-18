@@ -44,17 +44,29 @@ create table public.reservations (
   quantity smallint not null default 1 check (quantity between 1 and 4),
   status varchar(20) not null default 'confirmed' check (status in ('confirmed', 'waitlist', 'cancelled')),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  cancelled_at timestamptz,
   constraint one_reservation_per_email unique (event_id, attendee_email)
+);
+
+create table public.reservation_guests (
+  id uuid primary key default gen_random_uuid(),
+  reservation_id uuid not null references public.reservations(id) on delete cascade,
+  guest_name varchar(80),
+  created_at timestamptz not null default now(),
+  constraint valid_optional_guest_name check (guest_name is null or char_length(trim(guest_name)) between 1 and 80)
 );
 
 create index events_starts_at_idx on public.events (starts_at);
 create index events_category_id_idx on public.events (category_id);
 create index reservations_event_id_idx on public.reservations (event_id);
+create index reservation_guests_reservation_id_idx on public.reservation_guests (reservation_id);
 
 alter table public.categories enable row level security;
 alter table public.venues enable row level security;
 alter table public.events enable row level security;
 alter table public.reservations enable row level security;
+alter table public.reservation_guests enable row level security;
 
 create policy "Public can read categories"
   on public.categories for select to anon using (true);

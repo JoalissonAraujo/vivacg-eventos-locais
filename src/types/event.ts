@@ -26,4 +26,13 @@ export interface ReservationInput {
 export interface Reservation extends ReservationInput {
   id: string
   createdAt: string
+  updatedAt: string
+  cancelledAt?: string
+  guests: ReservationGuest[]
+  status: 'confirmed' | 'waitlist' | 'cancelled'
+}
+
+export interface ReservationGuest {
+  id: string
+  name?: string
 }

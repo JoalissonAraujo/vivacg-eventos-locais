@@ -12,11 +12,17 @@ O projeto foi pensado como MVP para o desafio de estágio da InovatechIA. Priori
 
 - catálogo com seis eventos de exemplo;
 - pesquisa por evento ou local;
-- filtros por categoria;
+- filtros por categoria, data e disponibilidade;
 - detalhes completos em uma janela responsiva;
 - reserva ou lista de interesse;
 - validação de nome, e-mail e quantidade;
 - prevenção local de reserva duplicada;
+- atualização local das vagas após a reserva;
+- comprovante copiável com código da solicitação;
+- área “Minhas reservas” com histórico deste navegador;
+- favoritos locais e filtro para exibir somente eventos salvos;
+- ampliação segura de uma reserva existente, com convidado opcional;
+- remoção de vaga adicional e cancelamento sem apagar o histórico;
 - estados vazio, carregando, erro e sucesso;
 - layout adaptado para celular e desktop;
 - modelo PostgreSQL/Supabase com integridade, índices e RLS.

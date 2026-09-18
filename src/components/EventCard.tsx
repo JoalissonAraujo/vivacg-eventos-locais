@@ -1,19 +1,24 @@
-import { ArrowUpRight, Calendar, MapPin, Ticket } from 'lucide-react'
+import { ArrowUpRight, Calendar, Heart, MapPin, Ticket } from 'lucide-react'
 import { formatDate, formatPrice } from '../lib/formatters'
 import type { LocalEvent } from '../types/event'
 
 interface EventCardProps {
   event: LocalEvent
   onSelect: (event: LocalEvent) => void
+  isFavorite: boolean
+  onToggleFavorite: (eventId: string) => void
 }
 
-export function EventCard({ event, onSelect }: EventCardProps) {
+export function EventCard({ event, onSelect, isFavorite, onToggleFavorite }: EventCardProps) {
   const soldOut = event.availableSpots === 0
 
   return (
     <article className="event-card">
       <div className="event-image-wrap">
         <img className="event-image" src={event.imageUrl} alt="" loading="lazy" />
+        <button className={isFavorite ? 'favorite-button active' : 'favorite-button'} type="button" onClick={() => onToggleFavorite(event.id)} aria-label={isFavorite ? `Remover ${event.title} dos favoritos` : `Adicionar ${event.title} aos favoritos`} aria-pressed={isFavorite}>
+          <Heart size={19} fill={isFavorite ? 'currentColor' : 'none'} aria-hidden="true" />
+        </button>
         <span className="category-badge">{event.category}</span>
         {soldOut && <span className="sold-out-badge">Lista de interesse</span>}
       </div>
